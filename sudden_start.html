@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>急発進防止装置 要否判定シミュレーター</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans JP',sans-serif;color:#d6e4f0;min-height:100vh;
+background:linear-gradient(160deg,#0b1624,#152538) fixed;padding:18px 14px 60px}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;
+background-image:linear-gradient(rgba(80,200,230,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(80,200,230,.05) 1px,transparent 1px);background-size:32px 32px}
+.wrap{position:relative;max-width:520px;margin:0 auto}
+.tag{display:inline-block;font-family:'Share Tech Mono',monospace;font-size:12px;color:#4fd8e8;border:1px solid rgba(79,216,232,.4);border-radius:20px;padding:3px 12px;margin-bottom:10px}
+h1{font-size:21px;font-weight:700;line-height:1.4;margin-bottom:4px}
+.sub{font-size:13px;color:#8fa8bd;margin-bottom:18px;line-height:1.6}
+.card{background:rgba(14,28,45,.72);border:1px solid rgba(79,216,232,.18);border-radius:14px;padding:16px;margin-bottom:14px}
+.card h2{font-size:14px;font-weight:700;color:#4fd8e8;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card h2 .st{font-family:'Share Tech Mono',monospace;font-size:12px;background:rgba(79,216,232,.14);border-radius:6px;padding:2px 8px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.f{margin-bottom:10px}
+.f label.l{display:block;font-size:12px;color:#8fa8bd;margin-bottom:4px}
+.f label.l b{font-family:'Share Tech Mono',monospace;color:#d6e4f0;font-weight:400;margin-right:4px}
+input[type=number]{width:100%;background:#0a1320;border:1px solid rgba(120,160,190,.3);border-radius:8px;color:#e8f2fa;
+font-family:'Share Tech Mono',monospace;font-size:16px;padding:9px 10px;outline:none}
+input[type=number]:focus{border-color:#4fd8e8;box-shadow:0 0 0 2px rgba(79,216,232,.2)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.pill{position:relative}
+.pill input{position:absolute;opacity:0}
+.pill span{display:block;font-size:13px;border:1px solid rgba(120,160,190,.35);border-radius:20px;padding:7px 14px;cursor:pointer;color:#a9bfd1;background:#0a1320;line-height:1.4}
+.pill input:checked+span{border-color:#4fd8e8;color:#fff;background:rgba(79,216,232,.16);box-shadow:0 0 10px rgba(79,216,232,.25)}
+.pill input:focus-visible+span{outline:2px solid #4fd8e8;outline-offset:2px}
+.pill input:disabled+span{opacity:.35;cursor:not-allowed}
+.hide{display:none}
+.note{font-size:12px;color:#8fa8bd;line-height:1.6;margin-top:4px}
+.btns{display:flex;gap:10px;margin:4px 0 16px}
+button{font-family:inherit;font-size:15px;font-weight:700;border-radius:10px;padding:12px;cursor:pointer;border:1px solid transparent}
+#go{flex:1;background:linear-gradient(135deg,#1e88e5,#19b5d8);color:#fff;box-shadow:0 0 18px rgba(30,160,230,.5)}
+#go:hover{box-shadow:0 0 26px rgba(30,160,230,.75)}
+#rs{background:transparent;color:#8fa8bd;border-color:rgba(120,160,190,.35);padding:12px 18px}
+button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+#res{display:none}
+.verdict{border-radius:12px;padding:16px;text-align:center;margin-bottom:12px}
+.verdict .k{font-size:12px;opacity:.85;margin-bottom:4px}
+.verdict .v{font-size:28px;font-weight:700}
+.verdict.no{background:rgba(40,190,140,.14);border:1px solid rgba(60,220,160,.5);color:#6ff0c0;box-shadow:0 0 18px rgba(60,220,160,.2)}
+.verdict.yes{background:rgba(255,160,60,.13);border:1px solid rgba(255,170,70,.55);color:#ffc277;box-shadow:0 0 18px rgba(255,170,70,.22)}
+.m{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-family:'Share Tech Mono',monospace;font-size:14px;margin-bottom:12px}
+.m div:nth-child(odd){color:#8fa8bd}
+.m div:nth-child(even){text-align:right;color:#e8f2fa}
+.trace{list-style:none;font-size:13px;line-height:1.6;border-top:1px solid rgba(120,160,190,.2);padding-top:10px}
+.trace li{padding:4px 0 4px 18px;position:relative}
+.trace li::before{content:"";position:absolute;left:3px;top:11px;width:6px;height:6px;border-radius:50%;background:#4fd8e8}
+.tbl{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px;table-layout:fixed}
+.tbl td{border:1px solid rgba(120,160,190,.3);padding:9px 5px;text-align:center;color:#6f879b;background:#0a1320;line-height:1.45}
+.tbl td.on{color:#fff;font-weight:700;background:rgba(79,216,232,.2);border-color:#4fd8e8;box-shadow:inset 0 0 12px rgba(79,216,232,.4)}
+.tbl td.r{font-size:15px}
+.tbl td.r.on-no{color:#6ff0c0;background:rgba(40,190,140,.22);border-color:#3cdca0;box-shadow:inset 0 0 14px rgba(60,220,160,.45)}
+.tbl td.r.on-yes{color:#ffc277;background:rgba(255,160,60,.2);border-color:#ffaa46;box-shadow:inset 0 0 14px rgba(255,170,70,.45)}
+.err{color:#ff8a8a;font-size:13px;line-height:1.6}
+.ref{font-size:12px;color:#7890a5;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+<span class="tag">小安則 第23条</span>
+<h1>急発進防止装置（機構）<br>要否判定シミュレーター</h1>
+<p class="sub">「急に発進する恐れのある船舶」への該当性から、急発進防止装置（機構）が必要かどうかを判定します。</p>
+
+<div class="card">
+<h2><span class="st">STEP 1</span>船舶の主要目</h2>
+<div class="row">
+<div class="f"><label class="l"><b>L</b>船の長さ (m)</label><input type="number" id="L" step="any" inputmode="decimal"></div>
+<div class="f"><label class="l"><b>B</b>船の幅 (m)</label><input type="number" id="B" step="any" inputmode="decimal"></div>
+</div>
+<div class="f"><label class="l">船体の種類</label>
+<div class="pills">
+<label class="pill"><input type="radio" name="hull" value="steel"><span>鋼船</span></label>
+<label class="pill"><input type="radio" name="hull" value="other" checked><span>鋼船以外</span></label>
+</div></div>
+</div>
+
+<div class="card">
+<h2><span class="st">STEP 2</span>最強速力 V</h2>
+<div class="f"><label class="l">V の求め方</label>
+<div class="pills">
+<label class="pill"><input type="radio" name="vm" value="meas" checked><span>実測値</span></label>
+<label class="pill"><input type="radio" name="vm" value="calc" id="vcalc"><span>計算式で算出</span></label>
+</div>
+<p class="note" id="vnote">鋼船は実測値を使用します。</p></div>
+<div id="measBox" class="f"><label class="l"><b>V</b>最強速力 (kt)</label><input type="number" id="V" step="any" inputmode="decimal"></div>
+<div id="calcBox" class="hide">
+<p class="note" style="margin:0 0 10px">V = 0.755 × L<sup>0.5</sup> × (PS/Δ)<sup>0.623</sup>　／　Δ = 0.5·L·B·d　／　d = D − (F − (0.075N + W)/(0.78·L·B))</p>
+<div class="row">
+<div class="f"><label class="l"><b>PS</b>機関の出力</label><input type="number" id="PS" step="any" inputmode="decimal"></div>
+<div class="f"><label class="l"><b>D</b>船の深さ (m)</label><input type="number" id="D" step="any" inputmode="decimal"></div>
+<div class="f"><label class="l"><b>F</b>軽荷時の中央乾舷 (m)</label><input type="number" id="F" step="any" inputmode="decimal"></div>
+<div class="f"><label class="l"><b>N</b>最大搭載人数 (人)</label><input type="number" id="N" step="any" inputmode="decimal" placeholder="0"></div>
+<div class="f"><label class="l"><b>W</b>貨物重量 (t)</label><input type="number" id="W" step="any" inputmode="decimal" placeholder="0"></div>
+</div>
+</div>
+</div>
+
+<div class="card" id="c3">
+<h2><span class="st">STEP 3</span>検査時期・操船方式</h2>
+<p class="note" style="margin:0 0 10px">V/L<sup>0.5</sup> が 3.6 以上のときに判定へ使用します。</p>
+<div class="f"><label class="l">第1回定期検査の時期</label>
+<div class="pills">
+<label class="pill"><input type="radio" name="dt" value="before" checked><span>平成6年5月19日以前</span></label>
+<label class="pill"><input type="radio" name="dt" value="after"><span>平成6年5月20日以降</span></label>
+</div></div>
+<div class="f" id="rmBox"><label class="l">操縦方式</label>
+<div class="pills">
+<label class="pill"><input type="radio" name="rm" value="direct" checked><span>遠隔操作でない（始動操船時にエンジン直視可を含む）</span></label>
+<label class="pill"><input type="radio" name="rm" value="remote"><span>遠隔操作</span></label>
+</div></div>
+</div>
+
+<div class="btns"><button id="go">判定する</button><button id="rs" type="button">クリア</button></div>
+
+<div class="card" id="res">
+<h2><span class="st">RESULT</span>判定結果</h2>
+<div id="out"></div>
+</div>
+
+<template id="tbltpl"><table class="tbl">
+<tr><td id="t_lt36" colspan="4">V/L<sup>0.5</sup> &lt; 3.6</td><td id="t_no" class="r" rowspan="3">不要</td></tr>
+<tr><td id="t_ge36" rowspan="4">V/L<sup>0.5</sup> ≧ 3.6</td><td id="t_before" rowspan="3">第1回定期検査<br>H6/5/19以前</td><td id="t_direct" colspan="2">非遠隔（直視含む）</td></tr>
+<tr><td id="t_remote" rowspan="2">遠隔操作</td><td id="t_lt4">V/L<sup>0.5</sup> &lt; 4</td></tr>
+<tr><td id="t_ge4">V/L<sup>0.5</sup> ≧ 4</td><td id="t_yes" class="r" rowspan="2">必要</td></tr>
+<tr><td id="t_after" colspan="3">第1回定期検査 H6/5/20以降</td></tr>
+</table></template>
+<p class="ref">判定フロー：V/L<sup>0.5</sup> &lt; 3.6 → 不要。3.6 以上は第1回定期検査が平成6年5月19日以前の場合、非遠隔なら不要、遠隔操作なら V/L<sup>0.5</sup> &lt; 4 で不要・4 以上で必要。平成6年5月20日以降は必要。</p>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const rv=n=>document.querySelector('input[name="'+n+'"]:checked').value;
+const num=(id,z)=>{const s=$(id).value.trim();return s===''?(z?0:NaN):parseFloat(s)};
+const f=(x,d)=>x.toFixed(d);
+
+function sync(){
+  const steel=rv('hull')==='steel';
+  $('vcalc').disabled=steel;
+  if(steel&&rv('vm')==='calc')document.querySelector('input[name="vm"][value="meas"]').checked=true;
+  $('vnote').textContent=steel?'鋼船は実測値を使用します。':'鋼船以外は実測値、または計算式のどちらかを選べます。';
+  const calc=rv('vm')==='calc';
+  $('measBox').classList.toggle('hide',calc);
+  $('calcBox').classList.toggle('hide',!calc);
+  $('rmBox').classList.toggle('hide',rv('dt')==='after');
+}
+document.querySelectorAll('input[type=radio]').forEach(e=>e.addEventListener('change',sync));
+
+function judge(){
+  const L=num('L'),B=num('B'),calc=rv('vm')==='calc';
+  const errs=[],tr=[],m=[];
+  if(!(L>0))errs.push('L（船の長さ）を入力してください。');
+  let V;
+  if(calc){
+    const PS=num('PS'),D=num('D'),F=num('F'),N=num('N',1),W=num('W',1);
+    if(!(B>0))errs.push('B（船の幅）を入力してください。');
+    if(!(PS>0))errs.push('PS（機関の出力）を入力してください。');
+    if(isNaN(D))errs.push('D（船の深さ）を入力してください。');
+    if(isNaN(F))errs.push('F（軽荷時の中央乾舷）を入力してください。');
+    if(!errs.length){
+      const d=D-(F-(0.075*N+W)/(0.78*L*B));
+      const dl=0.5*L*B*d;
+      if(!(d>0)||!(dl>0))errs.push('d または Δ が 0 以下になります。入力値を確認してください。');
+      else{
+        V=0.755*Math.sqrt(L)*Math.pow(PS/dl,0.623);
+        m.push(['d',f(d,3)+' m'],['Δ',f(dl,3)]);
+        tr.push('計算式で V を算出：V = '+f(V,3)+' kt');
+      }
+    }
+  }else{
+    V=num('V');
+    if(!(V>0))errs.push('V（最強速力）を入力してください。');
+    else tr.push('V は実測値 '+f(V,3)+' kt を使用');
+  }
+  const box=$('out');$('res').style.display='block';
+  if(errs.length){box.innerHTML='<p class="err">'+errs.join('<br>')+'</p>';return}
+
+  const r=V/Math.sqrt(L);
+  m.push(['V',f(V,3)+' kt'],['L^0.5',f(Math.sqrt(L),4)],['V/L^0.5',f(r,4)]);
+  let need;const on=[];
+  if(r<3.6){need=false;on.push('t_lt36','t_no');tr.push('V/L^0.5 = '+f(r,4)+' &lt; 3.6 → 急発進の恐れなし（不要）')}
+  else{
+    tr.push('V/L^0.5 = '+f(r,4)+' ≧ 3.6 → 第1回定期検査の時期で判定');on.push('t_ge36');
+    if(rv('dt')==='after'){need=true;on.push('t_after','t_yes');tr.push('第1回定期検査が平成6年5月20日以降 → 必要')}
+    else{
+      tr.push('第1回定期検査が平成6年5月19日以前');on.push('t_before');
+      if(rv('rm')==='direct'){need=false;on.push('t_direct','t_no');tr.push('遠隔操作でない（始動操船時にエンジン直視可を含む） → 不要')}
+      else if(r<4){need=false;on.push('t_remote','t_lt4','t_no');tr.push('遠隔操作で V/L^0.5 = '+f(r,4)+' &lt; 4 → 不要')}
+      else{need=true;on.push('t_remote','t_ge4','t_yes');tr.push('遠隔操作で V/L^0.5 = '+f(r,4)+' ≧ 4 → 必要')}
+    }
+  }
+  box.innerHTML='<div class="verdict '+(need?'yes':'no')+'"><div class="k">急発進防止装置（機構）</div><div class="v">'+(need?'必要':'不要')+'</div></div>'
+   +$('tbltpl').innerHTML+'<div class="m">'+m.map(x=>'<div>'+x[0]+'</div><div>'+x[1]+'</div>').join('')+'</div>'
+   +'<ul class="trace">'+tr.map(t=>'<li>'+t+'</li>').join('')+'</ul>';
+  on.forEach(id=>{const c=$(id);c.classList.add('on');if(c.classList.contains('r'))c.classList.add(need?'on-yes':'on-no')});
+  $('res').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+$('go').addEventListener('click',judge);
+$('rs').addEventListener('click',()=>{
+  document.querySelectorAll('input[type=number]').forEach(e=>e.value='');
+  document.querySelector('input[name="hull"][value="other"]').checked=true;
+  document.querySelector('input[name="vm"][value="meas"]').checked=true;
+  document.querySelector('input[name="dt"][value="before"]').checked=true;
+  document.querySelector('input[name="rm"][value="direct"]').checked=true;
+  $('res').style.display='none';sync();
+});
+sync();
+</script>
+</body>
+</html>
